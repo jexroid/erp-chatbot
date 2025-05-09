@@ -21,7 +21,7 @@ const StorePaymentModeEntity = async ({ enable, isDefault, name, description }) 
   });
 
   const result = await new Model({
-    ...req.body,
+    ...validation.data,
 
     isDefault: countDefault < 1 ? true : false,
   }).save();
@@ -180,7 +180,7 @@ const AddPaymentMode = tool(
     });
 
     const result = await new Model({
-      ...req.body,
+      ...validation.data,
 
       isDefault: countDefault < 1 ? true : false,
     }).save();
