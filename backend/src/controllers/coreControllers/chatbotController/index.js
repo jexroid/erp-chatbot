@@ -1,6 +1,7 @@
 const { RequestSchema } = require('./validation');
-const model = require('./model');
-const { StoreClientEntity, StoreTaxEntity, StorePaymentModeEntity } = require('./functions');
+const llm = require('./model');
+const { StoreClientEntity, StoreTaxEntity, StorePaymentModeEntity, AddClient, AddTax, AddPaymentMode } = require('./functions');
+const {HumanMessage } = require('@langchain/core/messages')
 
 const chatbotController = async (req, res) => {
   const body = req.body;
@@ -17,21 +18,25 @@ const chatbotController = async (req, res) => {
   }
 
   const toolsByName = {
-    AddClient: StoreClientEntity,
-    AddTax: StoreTaxEntity,
-    AddPaymentMode: StorePaymentModeEntity
+    AddClient: AddClient,
+    AddTax: AddTax,
+    AddPaymentMode: AddPaymentMode
   };
   
-  const AIResponse = await model.invoke({ input: body.message }, { configurable: { sessionId: token } });
+  const messages = [new HumanMessage(body.message)];
+
+  const AIResponse = await llm.invoke(messages);
 
   // * this for loop run `toolsByName` functions.
   // * if they are multiple functions, it calls them  
   for (const toolCall of AIResponse.tool_calls) {
     const toolFunction = toolsByName[toolCall.name];
-    if (toolFunction) {
-      const args = toolCall.args;
-      await toolFunction(args);
-    }
+    const toolMessage = await toolFunction.invoke(toolCall);
+    messages.push(toolMessage);
+    // if (toolFunction) {
+    //   const args = toolCall.args;
+    //   await toolFunction(args);
+    // }
   }
 
   // * sessionId job here is to separate each user history chat
